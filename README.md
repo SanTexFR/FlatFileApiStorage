@@ -2,7 +2,7 @@
 
 ![Java](https://img.shields.io/badge/Java-8--21+-orange?logo=openjdk)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.14--1.21+-brightgreen?logo=minecraft)
-![License](https://img.shields.io/badge/license-MIT-blue)
+![License](https://img.shields.io/badge/license-Open%20Usage%20--%20No%20Redistribution%20Claim-blue)
 ![Status](https://img.shields.io/badge/status-Beta-yellow)
 
 **FlatFileStorageAPI** est une API légère et simple d’utilisation pour les serveurs **Bukkit / Spigot / Paper**.  
@@ -154,4 +154,26 @@ String name = var.getValue(VarTypes.STRING, "playerName");
 
 // Sauvegarde asynchrone
 var.saveAsync();
+
+📜 Licence
+
+Utilisation libre – Interdiction de redistribution sous un autre nom
+
+Vous êtes autorisé à :
+
+✅ Utiliser librement ce plugin sur n’importe quel serveur Minecraft.
+
+✅ Le modifier pour un usage personnel ou pour votre serveur.
+
+Vous n’êtes pas autorisé à :
+
+❌ Le redistribuer sous votre propre nom.
+
+❌ Revendiquer sa propriété ou retirer les crédits d’origine.
+
+❌ Le vendre ou le monétiser, que ce soit le plugin ou son code source.
+
+Auteur : SanTexFR
+Année : 2025
+
 ❤️ FlatFileStorageAPI — Simplifie la persistance de tes données Minecraft, sans base de données.
