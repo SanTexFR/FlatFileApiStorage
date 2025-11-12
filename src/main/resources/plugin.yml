@@ -1,0 +1,7 @@
+name: FlatFileStorageAPI
+version: ${project.version}
+main: fr.flatFileStorageAPI.FlatFileStorageAPI
+api-version: '1.21'
+authors: [SanTexFR]
+load: POSTWORLD
+folia-supported: true
