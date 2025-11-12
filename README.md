@@ -154,9 +154,7 @@ String name = var.getValue(VarTypes.STRING, "playerName");
 
 // Sauvegarde asynchrone
 var.saveAsync();
-
 📜 Licence
-
 Utilisation libre – Interdiction de redistribution sous un autre nom
 
 Vous êtes autorisé à :
