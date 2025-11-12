@@ -62,7 +62,7 @@ Elle permet de **stocker des données persistantes** sous forme de **fichiers pl
 
 ### 1️⃣ Téléchargement
 
-Téléchargez le JAR depuis la [page des releases](https://github.com/YourUsername/FlatFileStorageAPI/releases).
+Téléchargez le JAR depuis la [page des releases](https://github.com/SanTexFR/FlatFileApiStorage/releases).
 
 ### 2️⃣ Ajout à votre projet
 
