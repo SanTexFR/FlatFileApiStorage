@@ -1,6 +1,6 @@
 # FlatFileStorageAPI
 
-![Java](https://img.shields.io/badge/Java-8--21+-orange?logo=openjdk)
+![Java](https://img.shields.io/badge/Java-14--21+-orange?logo=openjdk)
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.14--1.21+-brightgreen?logo=minecraft)
 ![License](https://img.shields.io/badge/license-Open%20Usage%20--%20No%20Redistribution%20Claim-blue)
 ![Status](https://img.shields.io/badge/status-Beta-yellow)
@@ -12,7 +12,7 @@ Elle permet de **stocker des données persistantes** sous forme de **fichiers pl
 
 ## 🚀 Fonctionnalités Clés
 
-* ✅ Compatible **Java 8 à 21+**
+* ✅ Compatible **Java 14 à 21+**
 * ✅ Compatible **Minecraft 1.14 à 1.21+**
 * ⚡ **Accès mémoire ultra rapide** (`O(1)`)
 * 💾 **Stockage plat (FlatFile)** sans dépendance à une base de données
