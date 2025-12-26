@@ -54,7 +54,9 @@ public class ChunkType extends NormalMesh<Chunk>{
         final ByteBuffer buffer=ByteBuffer.wrap(bytes);
         final byte[]worldBytes=new byte[buffer.getInt()];
         buffer.get(worldBytes);
-        return worldType.deserialize(worldBytes).getChunkAt(buffer.getLong());
+
+        final long key=buffer.getLong();
+        return worldType.deserialize(worldBytes).getChunkAtAsync(chunkX(key),chunkZ(key)).join();
     }
 
     //INTERNAL CLASS
@@ -106,4 +108,13 @@ public class ChunkType extends NormalMesh<Chunk>{
             return deserializeArray(bytes,ChunkType::deserializeChunk);
         }
     }
+
+    public static int chunkX(long key) {
+        return (int) key;
+    }
+
+    public static int chunkZ(long key) {
+        return (int) (key >> 32);
+    }
+
 }

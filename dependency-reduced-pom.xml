@@ -4,7 +4,7 @@
   <groupId>fr</groupId>
   <artifactId>flatfilestorageapi</artifactId>
   <name>flatfilestorageapi</name>
-  <version>0.27</version>
+  <version>0.29</version>
   <build>
     <defaultGoal>clean package</defaultGoal>
     <resources>

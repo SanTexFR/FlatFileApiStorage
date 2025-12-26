@@ -1,5 +1,7 @@
 package fr.flatFileStorageAPI;
 
+import com.cjcrafter.foliascheduler.FoliaCompatibility;
+import com.cjcrafter.foliascheduler.ServerImplementation;
 import fr.flatFileStorageAPI.Variables.Var;
 import fr.flatFileStorageAPI.Variables.VarTypes.VarTypes;
 import org.bukkit.Bukkit;
@@ -18,6 +20,7 @@ public final class FlatFileStorageAPI extends JavaPlugin{
     public static Logger logger=Bukkit.getLogger();
     private static FlatFileStorageAPI instance;
     private static final Cleaner cleaner=Cleaner.create();
+    private static ServerImplementation serverImplementation;
 
     //METHODS
     static{
@@ -27,6 +30,8 @@ public final class FlatFileStorageAPI extends JavaPlugin{
     public void onEnable(){
         //INSTANCE
         instance=this;
+
+        serverImplementation=new FoliaCompatibility(this).getServerImplementation();
 
         //BSTATS
         final Metrics metrics=new Metrics(this,24917);
@@ -45,6 +50,9 @@ public final class FlatFileStorageAPI extends JavaPlugin{
     }
 
     //CUSTOM METHODS
+    public static ServerImplementation getServerImplementation(){
+        return serverImplementation;
+    }
     public static @NotNull FlatFileStorageAPI getInstance(){
         return instance;
     }
@@ -73,7 +81,7 @@ public final class FlatFileStorageAPI extends JavaPlugin{
             var.saveSync();
             var.unload();
 
-            Bukkit.getScheduler().runTaskLater(getInstance(),()->{
+            getServerImplementation().global().runDelayed(()->{
                 test3();
             },60L);
         });
@@ -88,7 +96,7 @@ public final class FlatFileStorageAPI extends JavaPlugin{
         System.out.println("Get 1.000.000 values time: "+(System.currentTimeMillis()-time)+"ms");
         var.unload();
 
-        Bukkit.getScheduler().runTaskLater(getInstance(),()->{
+        getServerImplementation().global().runDelayed(()->{
             test3();
         },20L);
     }
@@ -99,7 +107,7 @@ public final class FlatFileStorageAPI extends JavaPlugin{
             System.out.println("async initialize time: "+(System.currentTimeMillis()-time)+"ms");
             var.unload();
 
-            Bukkit.getScheduler().runTaskLater(getInstance(),()->{
+            getServerImplementation().global().runDelayed(()->{
                 test4();
             },20L);
         }).exceptionally(ex -> {

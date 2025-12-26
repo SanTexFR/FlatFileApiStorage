@@ -15,7 +15,6 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 
 @SuppressWarnings({"unused","UnusedReturnValue","unchecked"})
 public class Var extends VarFile implements AutoCloseable {
@@ -42,6 +41,9 @@ public class Var extends VarFile implements AutoCloseable {
     //METHODS
 
     //VAR
+    public static @NotNull ConcurrentHashMap<@NotNull String,@NotNull WeakReference<Var>>getVars(){
+        return vars;
+    }
     public static @Nullable Var getVar(@NotNull Plugin plugin, @NotNull String filePath) {
         if (filePath.isEmpty() || !filePath.matches("[a-zA-Z0-9/_-]+"))
             throw new IllegalArgumentException("Var filePath must contain only alphabetic characters, numbers, '_', '-' or '/' and must not be empty.");
