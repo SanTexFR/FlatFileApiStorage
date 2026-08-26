@@ -15,10 +15,13 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @SuppressWarnings({"unused","UnusedReturnValue","unchecked"})
 public class Var extends VarFile implements AutoCloseable {
     //STATIC VARIABLES
+    private static final ExecutorService VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
     private static final @NotNull ConcurrentHashMap<@NotNull String,@NotNull WeakReference<Var>> vars = new ConcurrentHashMap<>();
     private static final @NotNull Map<@NotNull String,@NotNull CompletableFuture<@NotNull Var>> loadingVars = new ConcurrentHashMap<>();
     private static final @NotNull ConcurrentHashMap<@NotNull String,@NotNull CompletableFuture<Void>> savingVars = new ConcurrentHashMap<>();
@@ -35,7 +38,9 @@ public class Var extends VarFile implements AutoCloseable {
         super(new File(plugin.getDataFolder(),"data"), filePath);
         initialize();
         this.plugin = plugin;
-        cleanable = FlatFileStorageAPI.getCleaner().register(this, new Unload(getVarPath()));
+
+        WeakReference<Var> weakRef = new WeakReference<>(this);
+        cleanable = FlatFileStorageAPI.getCleaner().register(this, new Unload(getVarPath(), weakRef));
     }
 
     //METHODS
@@ -52,46 +57,57 @@ public class Var extends VarFile implements AutoCloseable {
     }
 
     public static @NotNull Var getOrLoadVar(@NotNull Plugin plugin, @NotNull String filePath) {
-        Var var = getVar(plugin, filePath);
-        if (var != null) return var;
-
-        var = new Var(plugin, filePath); // Création de l'objet Var
-        vars.put(plugin.getName() + "/" + filePath, new WeakReference<>(var)); // Mise en cache de la variable chargée
-        return var;
+        return getOrLoadVarAsync(plugin, filePath).join();
     }
 
-    public static @NotNull CompletableFuture<Var> getOrLoadVarAsync(@NotNull Plugin plugin, @NotNull String filePath) {
-        if (filePath.isEmpty() || !filePath.matches("[a-zA-Z0-9/_-]+")) {
-            throw new IllegalArgumentException("Var filePath must contain only alphabetic characters, numbers, '_', '-' or '/' and must not be empty.");
-        }
-
+//    public static @NotNull CompletableFuture<Var> getOrLoadVarAsync(@NotNull Plugin plugin, @NotNull String filePath) {
+//        final String key = plugin.getName() + "/" + filePath;
+//
+//        // 1. Vérifier le cache de références faibles
+//        WeakReference<Var> weak = vars.get(key);
+//        Var existing = (weak != null) ? weak.get() : null;
+//        if (existing != null) return CompletableFuture.completedFuture(existing);
+//
+//        // 2. Utiliser computeIfAbsent sur loadingVars pour garantir une seule exécution
+//        return loadingVars.computeIfAbsent(key, k ->
+//                CompletableFuture.supplyAsync(() -> new Var(plugin, filePath))
+//                        .thenApply(var -> {
+//                            vars.put(key, new WeakReference<>(var));
+//                            return var;
+//                        })
+//                        .whenComplete((v, ex) -> loadingVars.remove(key))
+//        );
+//    }
+    public static @NotNull CompletableFuture<Var> getOrLoadVarAsync(
+            @NotNull Plugin plugin,
+            @NotNull String filePath
+    ) {
         final String key = plugin.getName() + "/" + filePath;
 
-        // Vérifier si la variable existe déjà dans le cache des variables chargées
-        final WeakReference<Var> weak = vars.get(key);
-        if (weak != null) {
-            final Var var = weak.get();
-            if (var != null) return CompletableFuture.completedFuture(var);
+        // 1. Vérification rapide dans le cache des vars déjà chargées
+        WeakReference<Var> weak = vars.get(key);
+        Var existing = (weak != null) ? weak.get() : null;
+        if (existing != null) {
+            return CompletableFuture.completedFuture(existing);
         }
 
-        // Gérer le cas où la variable est en cours de chargement (éviter la concurrence)
-        return loadingVars.computeIfAbsent(key, k -> {
-            CompletableFuture<Var> future = CompletableFuture.supplyAsync(() -> {
-                try {
-                    // Ici, nous effectuons le véritable chargement de la variable
-                    Var var = new Var(plugin, filePath); // Création de l'objet Var
-                    vars.put(k, new WeakReference<>(var)); // Mise en cache
-                    return var;
-                } catch (Exception e) {
-                    plugin.getLogger().warning("Erreur lors du chargement de la variable: " + key + ": " + e.getMessage());
-                    throw new RuntimeException("Échec du chargement de la variable", e);
-                }
-            });
+        // 2. Atomicité garantie par computeIfAbsent
+        CompletableFuture<Var> future = loadingVars.computeIfAbsent(key, k ->
+                CompletableFuture.supplyAsync(() -> {
+                    // Re-vérification à l'intérieur du thread async au cas où
+                    WeakReference<Var> w = vars.get(k);
+                    Var v = (w != null) ? w.get() : null;
+                    if (v != null) return v;
 
-            // Nettoyage une fois terminé
-            future.whenComplete((res, ex) -> loadingVars.remove(k));
-            return future;
-        });
+                    Var newVar = new Var(plugin, filePath);
+                    vars.put(k, new WeakReference<>(newVar));
+                    return newVar;
+                }, VIRTUAL_EXECUTOR)
+        );
+
+        future.whenComplete((v, ex) -> loadingVars.remove(key, future));
+
+        return future;
     }
 
     public long getFileSize() {
@@ -121,7 +137,7 @@ public class Var extends VarFile implements AutoCloseable {
             } catch (Exception e) {
                 plugin.getLogger().warning("Erreur lors de l'enregistrement asynchrone de " + getVarPath() + ": " + e.getMessage());
             }
-        }).whenComplete((result, exception) -> {
+        },VIRTUAL_EXECUTOR).whenComplete((result, exception) -> {
             isSavingAsync = false;
             savingVars.remove(key);
         });
@@ -137,8 +153,19 @@ public class Var extends VarFile implements AutoCloseable {
 
     @Deprecated
     public void unload() {
-        this.data = null;
-        vars.remove(getVarPath());
+        // 1. Vider les données locales
+        this.data.clear();
+
+        // 2. Nettoyage manuel du cache 'vars'
+        WeakReference<Var> currentRef = vars.get(getVarPath());
+        if (currentRef != null && currentRef.get() == this) {
+            vars.remove(getVarPath(), currentRef); // Supprime uniquement si c'est cette instance précise
+        }
+
+        // 3. Désactiver le Cleaner pour qu'il ne se réexécute pas plus tard inutilement
+        if (this.cleanable != null) {
+            this.cleanable.clean();
+        }
     }
 
     //NORMAL METHODS
@@ -208,10 +235,11 @@ public class Var extends VarFile implements AutoCloseable {
     }
 
     //INNER CLASS
-    private record Unload(@NotNull String path) implements Runnable {
+    private record Unload(@NotNull String path, @NotNull WeakReference<Var> weakRef) implements Runnable {
         @Override
         public void run() {
-            vars.remove(path);
+            // Supprime seulement si la map contient encore cette WeakReference précise
+            vars.remove(path, weakRef);
         }
     }
 }
